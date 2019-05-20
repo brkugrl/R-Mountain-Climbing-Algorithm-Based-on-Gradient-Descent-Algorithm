@@ -1,0 +1,176 @@
+#Created by Berke Ugurlu
+myData <- read.csv(file="C:/asd.csv", header=TRUE, sep=",")
+
+predictedMatrix <- c()
+preidctedMatrix2 <- c()
+
+x1 <- c()
+x2 <- c()
+y <- c()
+
+for(i in 1:87){
+  for(j in 1:61){
+    x1 <- append(x1, i)
+    x2 <- append(x2, j)
+    y <- append(y, myData[i,j])
+    
+  }
+}
+
+# print(y)
+# print(x1)
+# print(x2)
+
+Regression <- lm(y ~ x1 + x2)
+summary(Regression)
+
+
+gradientDesc <- function(y, estimator1, estimator2, stepSize, convThreshold, maxIter, predictedMatrix) {
+  
+  m1 <- 0
+  m2 <- 0
+  c <- 0
+  n <- 5307
+  converged = FALSE
+  numberOfIterations = 0
+  costFunc <- c()
+  
+  yhat <- c()
+  yhat <- m1 * estimator1 + m2 * estimator2 + c
+  
+  MSE <- sum((y - yhat)^2, NA, na.rm = TRUE) / n
+  
+  for(i in 1:maxIter){
+    
+    gradient1 = -(2/n) * sum(estimator1 * (y - yhat), NA, na.rm = TRUE)
+    gradient2 = -(2/n) * sum(estimator2 * (y - yhat), NA, na.rm = TRUE)
+    gradient3 = -(2/n) * sum(y - yhat, NA, na.rm = TRUE)
+    
+    m1_new <- m1 - stepSize * gradient1
+    m2_new <- m2 - stepSize * gradient2
+    c_new <- c - stepSize * gradient3
+    
+    m1 <- m1_new
+    m2 <- m2_new
+    c <- c_new
+    
+    yhat_new <- m1 * estimator1 + m2 * estimator2 + c
+    yhat <- yhat_new
+    
+    MSE_new <- sum((yhat - y) ^ 2, NA, na.rm = TRUE) / n
+    MSE <- MSE_new
+    costFunc[i] <- MSE
+    
+    numberOfIterations = numberOfIterations + 1
+    
+    if((MSE < convThreshold))
+      break()
+    
+  }
+  
+  predictedMatrix <- m1 * x1 + m2 * x2 + c
+  plot(costFunc, type='line', col='blue', lwd=2, main='Cost function', ylab='cost', xlab='Iterations')
+  
+  print(c)
+  print(m1)
+  print(m2)
+  
+  print(y[1:30])
+  print(predictedMatrix[1:30])
+  return (predictedMatrix)
+}
+
+
+#Firstly, I calculated coefficients of the main equation (coef1,coef2,coef3)
+#Then, I calculated the predicted matrix which is predictedMatrix = coef1 * x1 + coef2 * x2 + coef3 
+#I found the intersetion points between predicted matrix and y
+#I found the highest point among these intersection points
+#ı subtracted the height of the highest intersection point from original y matrix(If any value becomes smaller than
+#0, I make it 0, so all elements are bigger than or equal to 0). And then I pushed new y matrix to gradient descent method
+#and I did the same procedure again. In first Iteration I got 146, in second iteration I got 10. However, before applying
+#second iteration I subtracted 146 from y matrix. This means that in second iteration I got 146+10 = 156. So my algorithm
+#works fine. I did only 2 iterations because it needs too much time for each iteration. If we increase the number of
+#iterations we can see that algorithm climbs.
+
+#########First Iteration starts from here
+matrix1 <- c()
+matrix1 <- gradientDesc(y, x1, x2,0.00065, 426.5, 500000, predictedMatrix)
+
+values <- c()
+
+control <- TRUE
+contro1Prev <- TRUE
+for(i in 1:length(matrix1)){
+  if((matrix1[i] > y [i])){
+    controlPrev <- control
+    control <- FALSE
+    
+  }
+  else if((matrix1[i] < y[i])){
+    controlPrev <- control
+    control <- TRUE
+    
+  }
+  
+  if(((control && !controlPrev) | (!control && controlPrev))){
+    values <- append(values, i)
+  }
+  
+}
+print(values)
+
+sum <- 0
+for(i in 1:length(values)){
+  if(sum < y[values[i]]){
+    sum <- y[values[i]]
+  }
+}
+
+for(i in 1:5307){
+  y[i] <- y[i] - sum
+  if((y[i] < 0)){
+    y[i] <- 0
+  }
+}
+print(y)
+
+
+#########Second iteration starts from here
+matrix2 <- c()
+matrix2 <- gradientDesc(y, x1, x2,0.0000065, 226.5, 500000, predictedMatrix2)
+
+print(matrix2)
+values2 <- c()
+
+control2 <- TRUE
+contro1Prev2 <- TRUE
+for(i in 1:length(matrix2)){
+  if((matrix2[i] > y [i])){
+    controlPrev <- control
+    control <- FALSE
+    
+  }
+  else if((matrix2[i] < y[i])){
+    controlPrev <- control
+    control <- TRUE
+    
+  }
+  
+  if(((control && !controlPrev) | (!control && controlPrev))){
+    values2 <- append(values2, i)
+  }
+  
+}
+print(values2[1:10])
+
+sum2 <- 0
+for(i in 1:length(values2)){
+  if(sum2 < y[values2[i]]){
+    sum2 <- y[values2[i]]
+  }
+}
+print("First highest intersection point")
+print(sum)
+sum2 <- sum2 + 146
+print("Second highest intersection point")
+print(sum2)
